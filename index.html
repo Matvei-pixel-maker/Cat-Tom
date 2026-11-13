@@ -2129,6 +2129,43 @@
       const petHint = document.getElementById('petHint');
       const photoCard = document.getElementById('photoCard');
 
+      const PURR_VOLUME = 0.5;
+      const PURR_DURATION = 3000;
+      const PURR_FADE_START = 2000;
+      const PURR_START_AT = 1.5;
+      const PETS_STORAGE_KEY = 'tom-pettings';
+
+      let purr = null;
+      try {
+        purr = new Audio('purr.mp3');
+        purr.id = 'purrSound';
+        purr.preload = 'auto';
+        purr.volume = PURR_VOLUME;
+        purr.setAttribute('aria-hidden', 'true');
+        document.body.appendChild(purr);
+      } catch (error) {
+        purr = null;
+      }
+
+      const readPets = () => {
+        try {
+          const stored = window.localStorage.getItem(PETS_STORAGE_KEY);
+          if (stored === null) return 0;
+          const count = Number(stored);
+          return Number.isInteger(count) && count >= 0 ? count : 0;
+        } catch (error) {
+          return 0;
+        }
+      };
+
+      const savePets = (value) => {
+        try {
+          window.localStorage.setItem(PETS_STORAGE_KEY, String(value));
+        } catch (error) {
+          /* localStorage может быть недоступен — счётчик продолжит работать в памяти */
+        }
+      };
+
       const phrases = [
         'Мурр…',
         'Мррр-р-р…',
@@ -2142,7 +2179,7 @@
       const heartColors = ['#e2737a', '#f08f96', '#d77fb2', '#ef9a6b', '#b98ad8', '#e66f6f'];
       const heartPath = 'M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z';
 
-      let pets = 0;
+      let pets = readPets();
       let aliveHearts = 0;
 
       const plural = (n, forms) => {
@@ -2152,6 +2189,89 @@
         if (n10 >= 2 && n10 <= 4 && (n100 < 12 || n100 > 14)) return forms[1];
         return forms[2];
       };
+
+      const renderPetCount = () => {
+        if (!petCount) return;
+        petCount.textContent = `${pets} ${plural(pets, ['поглаживание', 'поглаживания', 'поглаживаний'])}`;
+      };
+
+      renderPetCount();
+
+      /* ---------- Мурчание: 3 секунды, плавное затухание в последнюю секунду ---------- */
+      let purrRaf = 0;
+      let purrStopTimer = 0;
+      let purrRun = 0;
+
+      function stopPurr(token) {
+        if (token !== purrRun) return;
+        purrRun += 1;
+        if (purrRaf) cancelAnimationFrame(purrRaf);
+        if (purrStopTimer) clearTimeout(purrStopTimer);
+        purrRaf = 0;
+        purrStopTimer = 0;
+        if (!purr) return;
+        purr.pause();
+        try {
+          purr.currentTime = 0;
+        } catch (error) {
+          /* метаданные ещё не загружены — сброс произойдёт при следующем запуске */
+        }
+        purr.volume = PURR_VOLUME;
+      }
+
+      function playPurr() {
+        if (!purr) return;
+
+        purrRun += 1;
+        const token = purrRun;
+        if (purrRaf) cancelAnimationFrame(purrRaf);
+        if (purrStopTimer) clearTimeout(purrStopTimer);
+        purrRaf = 0;
+        purrStopTimer = 0;
+
+        purr.pause();
+        try {
+          purr.currentTime = PURR_START_AT;
+        } catch (error) {
+          /* пропускаем, если аудио ещё не готово */
+        }
+        purr.volume = PURR_VOLUME;
+
+        const startedAt = performance.now();
+        let playPromise = null;
+        try {
+          playPromise = purr.play();
+        } catch (error) {
+          playPromise = null;
+        }
+        if (playPromise && typeof playPromise.catch === 'function') {
+          playPromise.catch(() => {
+            /* звук может быть заблокирован браузером или файл недоступен */
+          });
+        }
+
+        const tick = (now) => {
+          if (token !== purrRun) return;
+          const elapsed = now - startedAt;
+
+          if (elapsed >= PURR_DURATION) {
+            stopPurr(token);
+            return;
+          }
+
+          if (elapsed > PURR_FADE_START) {
+            const progress = Math.min(1, (elapsed - PURR_FADE_START) / (PURR_DURATION - PURR_FADE_START));
+            purr.volume = Math.max(0, PURR_VOLUME * (1 - progress));
+          } else {
+            purr.volume = PURR_VOLUME;
+          }
+
+          purrRaf = requestAnimationFrame(tick);
+        };
+
+        purrRaf = requestAnimationFrame(tick);
+        purrStopTimer = window.setTimeout(() => stopPurr(token), PURR_DURATION);
+      }
 
       function spawnHeart(x, y) {
         if (aliveHearts > 60) return;
@@ -2195,7 +2315,9 @@
       if (petBtn) {
         petBtn.addEventListener('click', (event) => {
           pets += 1;
-          petCount.textContent = `${pets} ${plural(pets, ['поглаживание', 'поглаживания', 'поглаживаний'])}`;
+          renderPetCount();
+          savePets(pets);
+          playPurr();
           petHint.textContent = phrases[(pets - 1) % phrases.length];
 
           petCount.classList.remove('is-bumped');
