@@ -1783,6 +1783,207 @@
       .photo-card { border-radius: 20px; }
       .about-card { border-radius: 20px; }
     }
+
+    /* ============ 3D-вращение Тома ============ */
+    .spin {
+      position: relative;
+      z-index: 1;
+      margin-top: clamp(48px, 8vw, 88px);
+      scroll-margin-top: 100px;
+    }
+
+    .spin-card {
+      position: relative;
+      overflow: hidden;
+      padding: clamp(14px, 2vw, 22px);
+      border: 1px solid rgba(150, 205, 245, 0.3);
+      border-radius: 26px;
+      background:
+        radial-gradient(120% 90% at 50% 0%, rgba(38, 82, 116, 0.5) 0%, rgba(10, 16, 23, 0) 62%),
+        linear-gradient(165deg, rgba(15, 23, 32, 0.96) 0%, rgba(6, 10, 15, 0.98) 100%);
+      box-shadow:
+        0 40px 90px -55px rgba(0, 0, 0, 1),
+        0 0 0 1px rgba(120, 180, 225, 0.12),
+        0 0 60px -22px rgba(90, 170, 230, 0.55),
+        inset 0 1px 0 rgba(255, 255, 255, 0.07);
+      transition: box-shadow 0.4s ease, border-color 0.4s ease;
+      touch-action: pan-y;
+      cursor: ew-resize;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+
+    .spin-card.is-active {
+      border-color: rgba(160, 215, 250, 0.6);
+      box-shadow:
+        0 46px 100px -55px rgba(0, 0, 0, 1),
+        0 0 0 1px rgba(150, 205, 245, 0.28),
+        0 0 90px -18px rgba(95, 180, 240, 0.75),
+        inset 0 1px 0 rgba(255, 255, 255, 0.09);
+    }
+
+    .spin-frame {
+      position: relative;
+      overflow: hidden;
+      aspect-ratio: 16 / 9;
+      border-radius: 16px;
+      /* Прозрачный фон: иначе mix-blend-mode смешивал бы кадры с этой заливкой,
+         а не с фоном карточки и страницы */
+      background: transparent;
+      box-shadow: inset 0 0 0 1px rgba(160, 205, 240, 0.14);
+    }
+
+    /* Внутреннее затемнение по краям кадра: поверх фото, но под бейджем и полосой */
+    .spin-frame::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      z-index: 2;
+      pointer-events: none;
+      border-radius: inherit;
+      box-shadow: inset 0 0 120px rgba(2, 8, 14, 0.5);
+    }
+
+    .spin-frame canvas {
+      position: absolute;
+      inset: 0;
+      display: block;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      -webkit-user-drag: none;
+      /* Чёрный фон исходных кадров становится прозрачным:
+         кадр смешивается с фоном карточки, и котик «вписывается» в дизайн */
+      mix-blend-mode: screen;
+    }
+
+    /* Запасной вариант, если canvas недоступен */
+    .spin-frame img.spin-fallback {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      transform: scale(1.06);
+      pointer-events: none;
+      -webkit-user-drag: none;
+      mix-blend-mode: screen;
+    }
+
+    /* Как только первый кадр нарисован на canvas, подложка больше не нужна:
+       два слоя одновременно не висят, поэтому между кадрами нет двойного изображения */
+    .spin-frame.is-painted img.spin-fallback {
+      visibility: hidden;
+      opacity: 0;
+    }
+
+    .spin-bar {
+      position: absolute;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      z-index: 3;
+      height: 3px;
+      background: rgba(150, 205, 245, 0.12);
+    }
+
+    .spin-bar i {
+      display: block;
+      height: 100%;
+      width: 0;
+      background: linear-gradient(90deg, #6fb8ea, #cbe6fa);
+      box-shadow: 0 0 12px rgba(120, 195, 245, 0.9);
+      transition: width 0.15s ease;
+    }
+
+    .spin-badge {
+      position: absolute;
+      top: 14px;
+      right: 14px;
+      z-index: 3;
+      padding: 5px 11px;
+      border: 1px solid rgba(160, 210, 245, 0.32);
+      border-radius: 999px;
+      font-size: 0.7rem;
+      letter-spacing: 0.1em;
+      color: #d7eaf8;
+      background: rgba(8, 13, 19, 0.8);
+      -webkit-backdrop-filter: blur(8px);
+      backdrop-filter: blur(8px);
+      font-variant-numeric: tabular-nums;
+    }
+
+    .spin-hint {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px 20px;
+      margin-top: 14px;
+      font-size: 0.85rem;
+      color: #8fa3b5;
+    }
+
+    .spin-hint b {
+      font-weight: 600;
+      color: #cfe4f4;
+    }
+
+    .spin-hint kbd {
+      display: inline-block;
+      min-width: 26px;
+      padding: 2px 7px;
+      border: 1px solid rgba(170, 205, 235, 0.28);
+      border-radius: 6px;
+      font-family: var(--font-sans);
+      font-size: 0.78rem;
+      text-align: center;
+      color: #cfe4f4;
+      background: rgba(255, 255, 255, 0.05);
+    }
+
+    .spin-controls {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .spin-btn {
+      display: grid;
+      place-items: center;
+      width: 38px;
+      height: 38px;
+      padding: 0;
+      border: 1px solid rgba(170, 205, 235, 0.24);
+      border-radius: 10px;
+      color: #dbeaf7;
+      background: rgba(255, 255, 255, 0.045);
+      font-size: 1.1rem;
+      line-height: 1;
+      cursor: pointer;
+      transition: background 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease, transform 0.15s ease;
+    }
+
+    .spin-btn:hover {
+      border-color: rgba(180, 220, 250, 0.55);
+      background: rgba(120, 180, 225, 0.16);
+      box-shadow: 0 0 18px -6px rgba(110, 180, 235, 0.7);
+    }
+
+    .spin-btn:active { transform: scale(0.94); }
+
+    .spin-btn:disabled {
+      opacity: 0.4;
+      cursor: default;
+      box-shadow: none;
+    }
+
+    @media (max-width: 760px) {
+      .spin-card { border-radius: 20px; cursor: default; }
+      .spin-frame { aspect-ratio: 16 / 10; }
+      .spin-hint { font-size: 0.8rem; }
+      .spin-badge { top: 10px; right: 10px; font-size: 0.64rem; }
+    }
   </style>
 </head>
 <body id="top">
@@ -2072,6 +2273,33 @@
               <span>фото скоро появится</span>
             </span>
           </button>
+        </div>
+      </div>
+    </section>
+
+    <section class="spin shell" id="spin" aria-labelledby="spin-title">
+      <header class="section-head">
+        <div>
+          <p class="eyebrow">интерактив</p>
+          <h2 id="spin-title">Котик Том на гладильной доске</h2>
+        </div>
+        <p class="section-note">Ведите мышью влево-вправо — Том повернётся.</p>
+      </header>
+
+      <div class="spin-card" id="spinCard" role="group" aria-label="3D-модель кота Тома, управление стрелками" tabindex="0">
+        <div class="spin-frame" id="spinFrame">
+          <img class="spin-fallback" src="img/tom01.jpg" alt="" width="1280" height="718" decoding="async" draggable="false" aria-hidden="true" />
+          <canvas id="spinCanvas" width="1280" height="718" role="img" style="mix-blend-mode: screen;" aria-label="Том, кадр 1 из 30"></canvas>
+        </div>
+        <span class="spin-badge" id="spinBadge" aria-hidden="true">01 / 30</span>
+        <div class="spin-bar" aria-hidden="true"><i id="spinBar"></i></div>
+      </div>
+
+      <div class="spin-hint">
+        <span>Крутите мышью или свайпайте <b>·</b> стрелки <kbd>←</kbd><kbd>→</kbd> тоже работают</span>
+        <div class="spin-controls">
+          <button class="spin-btn" type="button" id="spinPrev" aria-label="Предыдущий кадр">‹</button>
+          <button class="spin-btn" type="button" id="spinNext" aria-label="Следующий кадр">›</button>
         </div>
       </div>
     </section>
@@ -2430,6 +2658,249 @@
           stepLightbox(-1);
         }
       });
+
+      /* ---------- 3D-вращение Тома ---------- */
+      const spinCard = document.getElementById('spinCard');
+      const spinFrame = document.getElementById('spinFrame');
+      const spinBadge = document.getElementById('spinBadge');
+      const spinBar = document.getElementById('spinBar');
+      const spinPrev = document.getElementById('spinPrev');
+      const spinNext = document.getElementById('spinNext');
+
+      if (spinCard && spinFrame) {
+        const SPIN_TOTAL = 30;
+        const SPIN_DIR = 'img/';
+        const SPIN_PREFIX = 'tom';
+        const SPIN_EXT = '.jpg';
+
+        const frameUrl = (index) => {
+          const number = String(index + 1).padStart(2, '0');
+          return `${SPIN_DIR}${SPIN_PREFIX}${number}${SPIN_EXT}`;
+        };
+
+        /* Предзагрузка всех кадров в память (декодирование тоже) */
+        const SPIN_W = 1280;
+        const SPIN_H = 718;
+        const SPIN_ZOOM = 1.06;
+
+        const spinImages = [];
+        const spinReady = [];
+
+        const canvas = document.getElementById('spinCanvas');
+        const spinFallback = spinFrame.querySelector('.spin-fallback');
+        const ctx = canvas && typeof canvas.getContext === 'function'
+          ? canvas.getContext('2d', { alpha: false })
+          : null;
+
+        let spinIndex = 0;
+        let spinPointerId = null;
+        let spinStartX = 0;
+        let spinStartIndex = 0;
+        let spinDragging = false;
+        let spinRaf = 0;
+        let spinPainted = -1;
+
+        const spinPerFrame = () => Math.max(6, Math.round(spinCard.clientWidth / (SPIN_TOTAL * 1.15)));
+
+        /* Один кадр = один drawImage уже декодированной картинки:
+           без подмены src, без промежуточных состояний и без просветов между слоями. */
+        const paintSpin = () => {
+          spinRaf = 0;
+          if (!ctx || !canvas.width || spinPainted === spinIndex) return;
+
+          /* Если нужный кадр ещё декодируется, рисуем ближайший готовый:
+             блок никогда не пустеет и не показывает чужой промежуточный кадр.
+             Когда целевой кадр станет готов, markReady запросит перерисовку. */
+          let drawIndex = spinIndex;
+          if (!spinReady[drawIndex]) {
+            drawIndex = -1;
+            for (let offset = 1; offset < SPIN_TOTAL; offset += 1) {
+              const before = spinIndex - offset;
+              const after = spinIndex + offset;
+              if (before >= 0 && spinReady[before]) { drawIndex = before; break; }
+              if (after < SPIN_TOTAL && spinReady[after]) { drawIndex = after; break; }
+            }
+          }
+
+          if (drawIndex < 0) return;
+
+          const image = spinImages[drawIndex];
+          if (!image || !image.naturalWidth) return;
+
+          const cw = canvas.width;
+          const ch = canvas.height;
+          const scale = Math.max(cw / SPIN_W, ch / SPIN_H) * SPIN_ZOOM;
+          const dw = SPIN_W * scale;
+          const dh = SPIN_H * scale;
+
+          ctx.drawImage(image, (cw - dw) / 2, (ch - dh) / 2, dw, dh);
+          spinPainted = drawIndex;
+
+          /* Подложка с первым кадром остаётся снизу, canvas проявляется поверх неё */
+          spinFrame.classList.add('is-painted');
+        };
+
+        const scheduleSpin = () => {
+          if (!spinRaf) spinRaf = requestAnimationFrame(paintSpin);
+        };
+
+        /* Буфер canvas под реальный размер и плотность пикселей экрана */
+        const sizeSpinCanvas = () => {
+          if (!canvas) return;
+          const rect = spinFrame.getBoundingClientRect();
+          if (!rect.width || !rect.height) return;
+
+          const dpr = Math.min(window.devicePixelRatio || 1, 2);
+          const width = Math.round(rect.width * dpr);
+          const height = Math.round(rect.height * dpr);
+
+          if (canvas.width === width && canvas.height === height) return;
+
+          canvas.width = width;
+          canvas.height = height;
+          spinPainted = -1;
+          paintSpin();
+
+          if (spinPainted === -1) scheduleSpin();
+        };
+
+        for (let i = 0; i < SPIN_TOTAL; i += 1) {
+          const image = new Image();
+          image.decoding = 'async';
+          spinImages.push(image);
+          spinReady.push(false);
+
+          const markReady = () => {
+            spinReady[i] = true;
+            if (i === spinIndex) scheduleSpin();
+          };
+
+          image.addEventListener('load', () => {
+            if (typeof image.decode === 'function') {
+              image.decode().then(markReady, markReady);
+            } else {
+              markReady();
+            }
+          }, { once: true });
+
+          image.addEventListener('error', () => {
+            spinReady[i] = false;
+          }, { once: true });
+
+          image.src = frameUrl(i);
+
+          if (image.complete && image.naturalWidth) markReady();
+        }
+
+        const renderSpin = (nextIndex) => {
+          const clamped = Math.min(SPIN_TOTAL - 1, Math.max(0, nextIndex));
+          if (clamped === spinIndex && spinPainted === spinIndex) return;
+          spinIndex = clamped;
+
+          /* Размер буфера сверяем лениво: это дешёвая проверка без изменений,
+             зато кадр не растянется, если окно изменили между событиями. */
+          sizeSpinCanvas();
+
+          if (ctx) {
+            scheduleSpin();
+          } else if (spinFallback) {
+            /* Резерв без canvas: обычная подмена картинки */
+            spinFallback.hidden = false;
+            spinFallback.style.display = '';
+            const url = frameUrl(clamped);
+            if (spinFallback.getAttribute('src') !== url) spinFallback.src = url;
+          }
+
+          if (canvas) {
+            canvas.setAttribute('aria-label', `Том, кадр ${clamped + 1} из ${SPIN_TOTAL}`);
+          }
+          if (spinBadge) {
+            spinBadge.textContent = `${String(clamped + 1).padStart(2, '0')} / ${SPIN_TOTAL}`;
+          }
+          if (spinBar) {
+            spinBar.style.width = `${((clamped + 1) / SPIN_TOTAL) * 100}%`;
+          }
+          if (spinPrev) spinPrev.disabled = clamped === 0;
+          if (spinNext) spinNext.disabled = clamped === SPIN_TOTAL - 1;
+        };
+
+        renderSpin(0);
+        sizeSpinCanvas();
+        window.addEventListener('resize', sizeSpinCanvas);
+
+        const stepSpin = (delta) => renderSpin(spinIndex + delta);
+
+        /* Мышь: вращение по горизонтальному движению над блоком */
+        const supportsHover = window.matchMedia('(hover: hover) and (pointer: fine)').matches;
+
+        if (supportsHover) {
+          spinCard.addEventListener('mousemove', (event) => {
+            const rect = spinCard.getBoundingClientRect();
+            if (rect.width === 0) return;
+            const raw = (event.clientX - rect.left) / rect.width;
+            // небольшой запас по краям, чтобы первый и последний кадры достигались легко
+            const ratio = Math.min(1, Math.max(0, (raw - 0.03) / 0.94));
+            renderSpin(Math.round(ratio * (SPIN_TOTAL - 1)));
+          });
+
+          spinCard.addEventListener('mouseenter', () => {
+            spinCard.classList.add('is-active');
+          });
+
+          spinCard.addEventListener('mouseleave', () => {
+            spinCard.classList.remove('is-active');
+          });
+        }
+
+        /* Сенсор: свайп */
+        spinCard.addEventListener('pointerdown', (event) => {
+          if (event.pointerType === 'mouse') return;
+          spinPointerId = event.pointerId;
+          spinStartX = event.clientX;
+          spinStartIndex = spinIndex;
+          spinDragging = true;
+          spinCard.classList.add('is-active');
+        });
+
+        spinCard.addEventListener('pointermove', (event) => {
+          if (!spinDragging || event.pointerId !== spinPointerId) return;
+          const delta = event.clientX - spinStartX;
+          renderSpin(spinStartIndex - Math.round(delta / spinPerFrame()));
+        });
+
+        const endSpinDrag = (event) => {
+          if (event.pointerId !== spinPointerId) return;
+          spinDragging = false;
+          spinPointerId = null;
+          spinCard.classList.remove('is-active');
+        };
+
+        spinCard.addEventListener('pointerup', endSpinDrag);
+        spinCard.addEventListener('pointercancel', endSpinDrag);
+        spinCard.addEventListener('pointerleave', endSpinDrag);
+
+        /* Клавиатура и кнопки */
+        spinCard.addEventListener('keydown', (event) => {
+          if (event.key === 'ArrowRight') {
+            event.preventDefault();
+            stepSpin(1);
+          } else if (event.key === 'ArrowLeft') {
+            event.preventDefault();
+            stepSpin(-1);
+          } else if (event.key === 'Home') {
+            event.preventDefault();
+            renderSpin(0);
+          } else if (event.key === 'End') {
+            event.preventDefault();
+            renderSpin(SPIN_TOTAL - 1);
+          }
+        });
+
+        if (spinPrev) spinPrev.addEventListener('click', () => stepSpin(-1));
+        if (spinNext) spinNext.addEventListener('click', () => stepSpin(1));
+
+        /* Первый кадр уже стоит в разметке */
+      }
 
       /* ---------- Мягкое появление секций ---------- */
       const revealItems = Array.from(document.querySelectorAll('.reveal'));
