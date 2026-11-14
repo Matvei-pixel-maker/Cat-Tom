@@ -782,6 +782,44 @@
     });
   }
 
+  /* ---------- Печатная машинка для текста «Обо мне» ---------- */
+  const typewriterEls = Array.from(document.querySelectorAll('[data-typewriter]'));
+
+  if (typewriterEls.length && !reduceMotion.matches) {
+    const typeWriterObserver = new IntersectionObserver((entries) => {
+      entries.forEach((entry) => {
+        if (!entry.isIntersecting) return;
+        const el = entry.target;
+        typeWriterObserver.unobserve(el);
+        runTypewriter(el);
+      });
+    }, { threshold: 0.1, rootMargin: '0px 0px -10% 0px' });
+
+    typewriterEls.forEach((el) => typeWriterObserver.observe(el));
+  }
+
+  const runTypewriter = (el) => {
+    const fullText = el.textContent;
+    const speed = Number(el.dataset.typewriterSpeed || 40);
+    el.textContent = '';
+
+    const cursor = document.createElement('span');
+    cursor.className = 'typewriter-cursor';
+    el.appendChild(cursor);
+
+    let i = 0;
+    const timer = setInterval(() => {
+      el.textContent = fullText.slice(0, i + 1);
+      el.appendChild(cursor);
+      i += 1;
+
+      if (i >= fullText.length) {
+        clearInterval(timer);
+        el.classList.add('done');
+      }
+    }, speed);
+  };
+
   /* ---------- Галерея: кнопка «Ещё фотографии / Свернуть» ---------- */
   const galleryMoreBtn = document.getElementById('galleryMore');
   const galleryMoreText = galleryMoreBtn?.querySelector('.gallery-more-text');

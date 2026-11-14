@@ -666,6 +666,35 @@ img {
   color: var(--rose-deep);
 }
 
+/* Typewriter effect */
+.typewriter {
+  position: relative;
+  display: block;
+  overflow: hidden;
+}
+
+.typewriter-cursor {
+  display: inline-block;
+  width: 2px;
+  height: 1em;
+  background: #00e5ff;
+  margin-left: 2px;
+  vertical-align: middle;
+  animation: typewriter-blink 1s step-end infinite;
+  pointer-events: none;
+}
+
+.typewriter.done .typewriter-cursor {
+  animation: none;
+  opacity: 0;
+  transition: opacity 0.6s ease;
+}
+
+@keyframes typewriter-blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0; }
+}
+
 h2 {
   margin: 0;
   font-family: var(--font-display);
