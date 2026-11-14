@@ -90,6 +90,68 @@
       display: block;
     }
 
+    /* ============ Кастомный курсор: кошачья лапка ============ */
+    /* Только для устройств с точным указателем (мышь/трекпад).
+       На тач-устройствах (pointer: coarse) оставляем нативный курсор,
+       чтобы не ломать прокрутку, тапы и не вызывать лагов. */
+    @media (pointer: fine) {
+      /* Базовый курсор по всей странице — лапка 32×32, hotspot (16, 28) */
+      html {
+        cursor: url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2040%2040'%20width='26'%20height='26'%3E%3Ccircle%20cx='6'%20cy='13.5'%20r='4.6'%20fill='%23dfe9f2'%20stroke='%235d7f9d'%20stroke-width='1.1'/%3E%3Ccircle%20cx='6'%20cy='13.5'%20r='2.1'%20fill='%237fa9c9'/%3E%3Ccircle%20cx='13.5'%20cy='6.5'%20r='5'%20fill='%23dfe9f2'%20stroke='%235d7f9d'%20stroke-width='1.1'/%3E%3Ccircle%20cx='13.5'%20cy='6.5'%20r='2.3'%20fill='%237fa9c9'/%3E%3Ccircle%20cx='26.5'%20cy='6.5'%20r='5'%20fill='%23dfe9f2'%20stroke='%235d7f9d'%20stroke-width='1.1'/%3E%3Ccircle%20cx='26.5'%20cy='6.5'%20r='2.3'%20fill='%237fa9c9'/%3E%3Ccircle%20cx='34'%20cy='13.5'%20r='4.6'%20fill='%23dfe9f2'%20stroke='%235d7f9d'%20stroke-width='1.1'/%3E%3Ccircle%20cx='34'%20cy='13.5'%20r='2.1'%20fill='%237fa9c9'/%3E%3Cellipse%20cx='20'%20cy='27'%20rx='13.5'%20ry='9.5'%20fill='%237fa9c9'%20stroke='%23e9eef4'%20stroke-width='2.4'/%3E%3C/svg%3E") 13 18, auto !important;
+      }
+
+      /* Интерактивные элементы: ссылки, кнопки, фото в галерее, 3D-карточка */
+      a,
+      button,
+      .tile-btn,
+      .photo-media,
+      .spin-card,
+      .pet-btn,
+      .spin-btn,
+      .nav-cta,
+      .lb-nav,
+      .lb-close {
+        cursor: url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2040%2040'%20width='26'%20height='26'%3E%3Ccircle%20cx='6'%20cy='13.5'%20r='4.6'%20fill='%23dfe9f2'%20stroke='%235d7f9d'%20stroke-width='1.1'/%3E%3Ccircle%20cx='6'%20cy='13.5'%20r='2.1'%20fill='%237fa9c9'/%3E%3Ccircle%20cx='13.5'%20cy='6.5'%20r='5'%20fill='%23dfe9f2'%20stroke='%235d7f9d'%20stroke-width='1.1'/%3E%3Ccircle%20cx='13.5'%20cy='6.5'%20r='2.3'%20fill='%237fa9c9'/%3E%3Ccircle%20cx='26.5'%20cy='6.5'%20r='5'%20fill='%23dfe9f2'%20stroke='%235d7f9d'%20stroke-width='1.1'/%3E%3Ccircle%20cx='26.5'%20cy='6.5'%20r='2.3'%20fill='%237fa9c9'/%3E%3Ccircle%20cx='34'%20cy='13.5'%20r='4.6'%20fill='%23dfe9f2'%20stroke='%235d7f9d'%20stroke-width='1.1'/%3E%3Ccircle%20cx='34'%20cy='13.5'%20r='2.1'%20fill='%237fa9c9'/%3E%3Cellipse%20cx='20'%20cy='27'%20rx='13.5'%20ry='9.5'%20fill='%237fa9c9'%20stroke='%23e9eef4'%20stroke-width='2.4'/%3E%3C/svg%3E") 13 18, auto !important;
+        transition: cursor 0.18s ease; /* плавное переключение курсора */
+      }
+
+      /* При наведении — увеличиваем лапку до 44×44, hotspot (22, 38) */
+      a:hover,
+      button:hover,
+      .tile-btn:hover,
+      .photo-media:hover,
+      .spin-card:hover,
+      .pet-btn:hover,
+      .spin-btn:hover,
+      .nav-cta:hover,
+      .lb-nav:hover,
+      .lb-close:hover {
+        cursor: url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2040%2040'%20width='36'%20height='36'%3E%3Ccircle%20cx='6'%20cy='13.5'%20r='4.6'%20fill='%23dfe9f2'%20stroke='%235d7f9d'%20stroke-width='1.1'/%3E%3Ccircle%20cx='6'%20cy='13.5'%20r='2.1'%20fill='%237fa9c9'/%3E%3Ccircle%20cx='13.5'%20cy='6.5'%20r='5'%20fill='%23dfe9f2'%20stroke='%235d7f9d'%20stroke-width='1.1'/%3E%3Ccircle%20cx='13.5'%20cy='6.5'%20r='2.3'%20fill='%237fa9c9'/%3E%3Ccircle%20cx='26.5'%20cy='6.5'%20r='5'%20fill='%23dfe9f2'%20stroke='%235d7f9d'%20stroke-width='1.1'/%3E%3Ccircle%20cx='26.5'%20cy='6.5'%20r='2.3'%20fill='%237fa9c9'/%3E%3Ccircle%20cx='34'%20cy='13.5'%20r='4.6'%20fill='%23dfe9f2'%20stroke='%235d7f9d'%20stroke-width='1.1'/%3E%3Ccircle%20cx='34'%20cy='13.5'%20r='2.1'%20fill='%237fa9c9'/%3E%3Cellipse%20cx='20'%20cy='27'%20rx='13.5'%20ry='9.5'%20fill='%237fa9c9'%20stroke='%23e9eef4'%20stroke-width='2.4'/%3E%3C/svg%3E") 18 24, auto !important;
+      }
+
+      /* Фокус — тоже увеличенная лапка для доступности */
+      a:focus-visible,
+      button:focus-visible,
+      .tile-btn:focus-visible,
+      .photo-media:focus-visible,
+      .spin-card:focus-visible,
+      .pet-btn:focus-visible,
+      .spin-btn:focus-visible,
+      .nav-cta:focus-visible,
+      .lb-nav:focus-visible,
+      .lb-close:focus-visible {
+        cursor: url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2040%2040'%20width='36'%20height='36'%3E%3Ccircle%20cx='6'%20cy='13.5'%20r='4.6'%20fill='%23dfe9f2'%20stroke='%235d7f9d'%20stroke-width='1.1'/%3E%3Ccircle%20cx='6'%20cy='13.5'%20r='2.1'%20fill='%237fa9c9'/%3E%3Ccircle%20cx='13.5'%20cy='6.5'%20r='5'%20fill='%23dfe9f2'%20stroke='%235d7f9d'%20stroke-width='1.1'/%3E%3Ccircle%20cx='13.5'%20cy='6.5'%20r='2.3'%20fill='%237fa9c9'/%3E%3Ccircle%20cx='26.5'%20cy='6.5'%20r='5'%20fill='%23dfe9f2'%20stroke='%235d7f9d'%20stroke-width='1.1'/%3E%3Ccircle%20cx='26.5'%20cy='6.5'%20r='2.3'%20fill='%237fa9c9'/%3E%3Ccircle%20cx='34'%20cy='13.5'%20r='4.6'%20fill='%23dfe9f2'%20stroke='%235d7f9d'%20stroke-width='1.1'/%3E%3Ccircle%20cx='34'%20cy='13.5'%20r='2.1'%20fill='%237fa9c9'/%3E%3Cellipse%20cx='20'%20cy='27'%20rx='13.5'%20ry='9.5'%20fill='%237fa9c9'%20stroke='%23e9eef4'%20stroke-width='2.4'/%3E%3C/svg%3E") 18 24, auto !important;
+      }
+
+      /* Исключения: текстовые инпуты, скроллбары — оставляем нативные */
+      input,
+      textarea,
+      select,
+      ::-webkit-scrollbar {
+        cursor: auto !important;
+      }
+    }
+
     .shell {
       width: min(var(--shell), calc(100% - clamp(32px, 8vw, 96px)));
       margin-inline: auto;
