@@ -966,21 +966,46 @@
 
     body.no-scroll { overflow: hidden; }
 
-    /* ============ Появление при скролле ============ */
-    /* Контент виден по умолчанию: анимация только добавляется, но никогда не прячет блок. */
-    .reveal.is-visible {
-      animation: rise 0.8s cubic-bezier(0.2, 0.7, 0.2, 1) both;
+    /* ============ Появление при скролле (fade-in-up) ============ */
+    /* Начальное состояние: скрыто и опущено. Ставим здесь, а не в ключевом кадре,
+       чтобы элемент был невидим сразу при отрисовке, до срабатывания IntersectionObserver.
+       animation-fill-mode: both в .fx-in потом плавно анимирует к opacity:1 / transform:none. */
+    [data-reveal] {
+      opacity: 0;
+      transform: translate3d(0, var(--fx-lift, 26px), 0);
     }
 
-    @keyframes rise {
+    /* Контент виден по умолчанию: классы только добавляют анимацию,
+       поэтому блоки никогда не остаются спрятанными без JS.
+       Анимация идёт на клавишах opacity/transform — их отрисовывает композитор,
+       без пересчёта вёрстки, поэтому скролл на телефоне остаётся плавным. */
+    .fx-in {
+      animation: fade-in-up var(--fx-dur, 0.72s) cubic-bezier(0.22, 0.75, 0.24, 1) var(--fx-delay, 0ms) both;
+    }
+
+    @keyframes fade-in-up {
       from {
         opacity: 0;
-        transform: translateY(22px);
+        transform: translate3d(0, var(--fx-lift, 26px), 0);
       }
       to {
         opacity: 1;
-        transform: none;
+        transform: translate3d(0, 0, 0);
       }
+    }
+
+    /* Сетка галереи: плитки появляются каскадом, но только за счёт задержки —
+       никаких лишних наблюдателей и обработчиков скролла. */
+    .gallery-grid .fx-in:nth-child(3n + 1) { --fx-delay: 0ms; }
+    .gallery-grid .fx-in:nth-child(3n + 2) { --fx-delay: 70ms; }
+    .gallery-grid .fx-in:nth-child(3n + 3) { --fx-delay: 140ms; }
+
+    /* После проигрывания анимации: фиксируем видимое состояние,
+       чтобы элемент не возвращался в скрытое состояние [data-reveal].
+       Используем комбинированный селектор для большей специфичности. */
+    [data-reveal].is-revealed {
+      opacity: 1;
+      transform: none;
     }
 
     /* ============ Адаптив ============ */
@@ -1177,6 +1202,19 @@
 
       .pet-btn.is-hinting::after {
         animation: none !important;
+      }
+
+      /* Без анимации появления: контент сразу на месте */
+      .fx-in {
+        animation: none !important;
+        transform: none !important;
+        opacity: 1 !important;
+      }
+
+      /* Уважение к reduced-motion: базовое состояние data-reveal тоже сбрасываем */
+      [data-reveal] {
+        opacity: 1 !important;
+        transform: none !important;
       }
 
       @keyframes heart-fade {
@@ -2012,7 +2050,7 @@
 
   <main id="main">
     <section class="hero shell" aria-labelledby="hero-title">
-      <div class="hero-copy">
+      <div class="hero-copy" data-reveal data-reveal-delay="60">
         <p class="eyebrow">персональная страница кота</p>
         <h1 class="hero-title" id="hero-title">
           <span class="hero-name">Том</span>
@@ -2045,7 +2083,7 @@
         </div>
       </div>
 
-      <figure class="hero-photo">
+      <figure class="hero-photo" data-reveal data-reveal-delay="160">
         <div class="photo-card" id="photoCard">
           <div class="photo-media is-cutout">
             <picture>
@@ -2067,9 +2105,9 @@
       </figure>
     </section>
 
-    <section class="about shell reveal" id="about" aria-labelledby="about-title">
+    <section class="about shell" id="about" aria-labelledby="about-title">
       <div class="about-card">
-        <div class="bubble">
+        <div class="bubble" data-reveal>
           <p class="bubble-kicker">Обо мне</p>
           <h2 id="about-title">Привет, я Том</h2>
           <p>У меня очень плотный график: поесть, поспать, проверить миску, снова поесть. Иногда я работаю будильником — без выходных, в шесть утра.</p>
@@ -2077,16 +2115,16 @@
           <p class="signature">Том, специалист по уюту</p>
         </div>
         <div class="stats" aria-label="Том в цифрах">
-          <div class="stat"><b>9</b><span>лет</span></div>
-          <div class="stat"><b>5,2</b><span>кг пуха</span></div>
-          <div class="stat"><b>18</b><span>ч сна в сутки</span></div>
-          <div class="stat"><b>∞</b><span>мурчания</span></div>
+          <div class="stat" data-reveal data-reveal-delay="90"><b>9</b><span>лет</span></div>
+          <div class="stat" data-reveal data-reveal-delay="150"><b>5,2</b><span>кг пуха</span></div>
+          <div class="stat" data-reveal data-reveal-delay="210"><b>18</b><span>ч сна в сутки</span></div>
+          <div class="stat" data-reveal data-reveal-delay="270"><b>∞</b><span>мурчания</span></div>
         </div>
       </div>
     </section>
 
-    <section class="gallery shell reveal" id="gallery" aria-labelledby="gallery-title">
-      <header class="section-head">
+    <section class="gallery shell" id="gallery" aria-labelledby="gallery-title">
+      <header class="section-head" data-reveal>
         <div>
           <p class="eyebrow">фотохроника</p>
           <h2 id="gallery-title">Галерея Тома</h2>
@@ -2095,7 +2133,7 @@
       </header>
 
       <div class="gallery-grid" id="galleryGrid">
-        <div class="tile">
+        <div class="tile" data-reveal>
           <button class="tile-btn" type="button" aria-label="Открыть фото: Том и его человек">
             <img src="img/cat1.jpg" alt="Хозяин держит чёрного кота Тома на руках" loading="lazy" width="1280" height="960" decoding="async" />
             <span class="tile-shade" aria-hidden="true"></span>
@@ -2110,7 +2148,7 @@
           </button>
         </div>
 
-        <div class="tile">
+        <div class="tile" data-reveal>
           <button class="tile-btn" type="button" aria-label="Открыть фото: сон номер сорок семь">
             <img src="img/cat3.jpg" alt="Том спит, свернувшись на пледе" loading="lazy" width="1200" height="900" decoding="async" />
             <span class="tile-shade" aria-hidden="true"></span>
@@ -2125,7 +2163,7 @@
           </button>
         </div>
 
-        <div class="tile">
+        <div class="tile" data-reveal>
           <button class="tile-btn" type="button" aria-label="Открыть фото: охота на солнечного зайчика">
             <img src="img/cat4.jpg" alt="Том играет с солнечным зайчиком" loading="lazy" width="1200" height="900" decoding="async" />
             <span class="tile-shade" aria-hidden="true"></span>
@@ -2140,7 +2178,7 @@
           </button>
         </div>
 
-        <div class="tile">
+        <div class="tile" data-reveal>
           <button class="tile-btn" type="button" aria-label="Открыть фото: лицо, услышавшее пылесос">
             <img src="img/cat5.jpg" alt="Том с удивлённым лицом услышал пылесос" loading="lazy" width="1200" height="900" decoding="async" />
             <span class="tile-shade" aria-hidden="true"></span>
@@ -2155,7 +2193,7 @@
           </button>
         </div>
 
-        <div class="tile">
+        <div class="tile" data-reveal>
           <button class="tile-btn" type="button" aria-label="Открыть фото: взгляд профессионала">
             <img src="img/cat6.jpg" alt="Том смотрит в камеру внимательным взглядом" loading="lazy" width="1200" height="900" decoding="async" />
             <span class="tile-shade" aria-hidden="true"></span>
@@ -2170,7 +2208,7 @@
           </button>
         </div>
 
-        <div class="tile">
+        <div class="tile" data-reveal>
           <button class="tile-btn" type="button" aria-label="Открыть фото: рабочее место на подоконнике">
             <img src="img/cat7.jpg" alt="Том лежит на подоконнике и наблюдает за улицей" loading="lazy" width="1200" height="900" decoding="async" />
             <span class="tile-shade" aria-hidden="true"></span>
@@ -2185,7 +2223,7 @@
           </button>
         </div>
 
-        <div class="tile">
+        <div class="tile" data-reveal>
           <button class="tile-btn" type="button" aria-label="Открыть фото: дракон на страже сна">
             <img src="img/cat10.jpg" alt="Том лежит на кровати рядом с игрушечным драконом" loading="lazy" width="1280" height="1280" decoding="async" />
             <span class="tile-shade" aria-hidden="true"></span>
@@ -2200,7 +2238,7 @@
           </button>
         </div>
 
-        <div class="tile">
+        <div class="tile" data-reveal>
           <button class="tile-btn" type="button" aria-label="Открыть фото: проверка ёлки">
             <img src="img/cat12.jpg" alt="Том сидит под новогодней ёлкой" loading="lazy" width="960" height="1280" decoding="async" />
             <span class="tile-shade" aria-hidden="true"></span>
@@ -2215,7 +2253,7 @@
           </button>
         </div>
 
-        <div class="tile">
+        <div class="tile" data-reveal>
           <button class="tile-btn" type="button" aria-label="Открыть фото: трон в гостиной">
             <img src="img/cat25.jpg" alt="Том лежит на зелёном стуле в гостиной" loading="lazy" width="1280" height="576" decoding="async" />
             <span class="tile-shade" aria-hidden="true"></span>
@@ -2230,7 +2268,7 @@
           </button>
         </div>
 
-        <div class="tile">
+        <div class="tile" data-reveal>
           <button class="tile-btn" type="button" aria-label="Открыть фото: инспекция раковины">
             <img src="img/cat30.jpg" alt="Том инспектирует кухонную раковину" loading="lazy" width="960" height="1280" decoding="async" />
             <span class="tile-shade" aria-hidden="true"></span>
@@ -2245,7 +2283,7 @@
           </button>
         </div>
 
-        <div class="tile">
+        <div class="tile" data-reveal>
           <button class="tile-btn" type="button" aria-label="Открыть фото: сон в звёздах">
             <img src="img/cat16.jpg" alt="Том спит на пледе со звёздами" loading="lazy" width="960" height="1280" decoding="async" />
             <span class="tile-shade" aria-hidden="true"></span>
@@ -2260,7 +2298,7 @@
           </button>
         </div>
 
-        <div class="tile">
+        <div class="tile" data-reveal>
           <button class="tile-btn" type="button" aria-label="Открыть фото: проверка миски">
             <img src="img/cat19.jpg" alt="Том ест из миски" loading="lazy" width="960" height="1280" decoding="async" />
             <span class="tile-shade" aria-hidden="true"></span>
@@ -2278,7 +2316,7 @@
     </section>
 
     <section class="spin shell" id="spin" aria-labelledby="spin-title">
-      <header class="section-head">
+      <header class="section-head" data-reveal>
         <div>
           <p class="eyebrow">интерактив</p>
           <h2 id="spin-title">Котик Том на гладильной доске</h2>
@@ -2902,22 +2940,46 @@
         /* Первый кадр уже стоит в разметке */
       }
 
-      /* ---------- Мягкое появление секций ---------- */
-      const revealItems = Array.from(document.querySelectorAll('.reveal'));
+      /* ---------- Плавное появление блоков при скролле (fade-in-up) ---------- */
+      /* Чистый IntersectionObserver: без библиотек и без обработчиков scroll,
+         поэтому прокрутка не дёргается даже на слабых телефонах.
+         Блок 3D-котика (.spin-card) намеренно не анимируется — его кадры
+         рисуются на canvas, и лишние transform/opacity сломали бы рендер. */
+      const revealTargets = Array.from(document.querySelectorAll('[data-reveal]'));
 
-      if ('IntersectionObserver' in window && !reduceMotion.matches) {
-        const observer = new IntersectionObserver((entries) => {
+      const showReveal = (item) => {
+        const delay = Number(item.dataset.revealDelay || 0);
+        if (delay > 0) item.style.setProperty('--fx-delay', `${delay}ms`);
+        item.classList.add('fx-in');
+
+        /* После анимации оставляем элемент видимым: добавляем класс-фиксатор,
+           а fx-in снимаем, чтобы не держать лишние слои композитора. */
+        item.addEventListener('animationend', () => {
+          item.classList.remove('fx-in');
+          item.classList.add('is-revealed');
+        }, { once: true });
+
+        /* Страховка на случай прерванной анимации или фоновой вкладки */
+        window.setTimeout(() => {
+          item.classList.remove('fx-in');
+          item.classList.add('is-revealed');
+        }, delay + 1400);
+      };
+
+      if ('IntersectionObserver' in window && !reduceMotion.matches && revealTargets.length) {
+        const revealObserver = new IntersectionObserver((entries, observer) => {
           entries.forEach((entry) => {
-            if (entry.isIntersecting) {
-              entry.target.classList.add('is-visible');
-              observer.unobserve(entry.target);
-            }
+            if (!entry.isIntersecting) return;
+            showReveal(entry.target);
+            observer.unobserve(entry.target);
           });
-        }, { threshold: 0.08, rootMargin: '0px 0px -6% 0px' });
+        }, { threshold: 0.12, rootMargin: '0px 0px -8% 0px' });
 
-        revealItems.forEach((item) => observer.observe(item));
-      } else {
-        revealItems.forEach((item) => item.classList.add('is-visible'));
+        revealTargets.forEach((item) => {
+          /* Блок 3D отсекаем прямо здесь, даже если data-reveal добавят позже */
+          if (item.closest('#spinCard')) return;
+          revealObserver.observe(item);
+        });
       }
 
       /* ---------- Камера-зум к кнопке «Погладить» ---------- */
