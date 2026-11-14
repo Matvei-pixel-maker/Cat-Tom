@@ -4,7 +4,158 @@
   const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
   const rand = (min, max) => Math.random() * (max - min) + min;
 
-  /* ---------- Заглушки, если фотографий ещё нет ---------- */
+  /* ---------- Живой фон: частицы с отталкиванием от курсора ---------- */
+  const bgCanvas = document.getElementById('bgCanvas');
+  if (bgCanvas && !reduceMotion.matches) {
+    const ctx = bgCanvas.getContext('2d');
+    let width, height;
+    const particles = [];
+    const PARTICLE_COUNT = 90;
+    const MOUSE_RADIUS = 260;
+    const PARTICLE_COLOR = '#00e5ff';
+    const CONNECT_DIST = 160;
+
+    const mouse = { x: -9999, y: -9999 };
+
+    class Particle {
+      constructor() {
+        this.reset();
+      }
+
+      reset() {
+        this.x = rand(0, width);
+        this.y = rand(0, height);
+        this.vx = rand(-1, 1);
+        this.vy = rand(-1, 1);
+        this.radius = rand(2, 3);
+        this.originalX = this.x;
+        this.originalY = this.y;
+      }
+
+      update() {
+        const dx = mouse.x - this.x;
+        const dy = mouse.y - this.y;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+
+        if (dist < MOUSE_RADIUS && dist > 0) {
+          const force = (MOUSE_RADIUS - dist) / MOUSE_RADIUS;
+          const angle = Math.atan2(dy, dx);
+          this.vx -= Math.cos(angle) * force * 4;
+          this.vy -= Math.sin(angle) * force * 4;
+        }
+
+        this.vx *= 0.92;
+        this.vy *= 0.92;
+        this.x += this.vx;
+        this.y += this.vy;
+
+        const homeDx = this.originalX - this.x;
+        const homeDy = this.originalY - this.y;
+        this.vx += homeDx * 0.002;
+        this.vy += homeDy * 0.002;
+
+        if (this.x < 0 || this.x > width) this.vx *= -1;
+        if (this.y < 0 || this.y > height) this.vy *= -1;
+      }
+
+      draw() {
+        ctx.fillStyle = PARTICLE_COLOR;
+        ctx.globalAlpha = 0.6;
+        ctx.beginPath();
+        ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.globalAlpha = 1;
+      }
+    }
+
+    function resize() {
+      width = bgCanvas.width = window.innerWidth;
+      height = bgCanvas.height = window.innerHeight;
+      particles.length = 0;
+      for (let i = 0; i < PARTICLE_COUNT; i += 1) particles.push(new Particle());
+    }
+
+    window.addEventListener('resize', resize);
+    window.addEventListener('mousemove', (e) => {
+      mouse.x = e.clientX;
+      mouse.y = e.clientY;
+    });
+
+    resize();
+
+    function animateBg() {
+      ctx.clearRect(0, 0, width, height);
+
+      for (let i = 0; i < particles.length; i += 1) {
+        const p = particles[i];
+        p.update();
+        p.draw();
+
+        for (let j = i + 1; j < particles.length; j += 1) {
+          const p2 = particles[j];
+          const dx = p.x - p2.x;
+          const dy = p.y - p2.y;
+          const dist = Math.sqrt(dx * dx + dy * dy);
+          if (dist < CONNECT_DIST) {
+            ctx.strokeStyle = PARTICLE_COLOR;
+            ctx.globalAlpha = 1 - dist / CONNECT_DIST;
+            ctx.beginPath();
+            ctx.moveTo(p.x, p.y);
+            ctx.lineTo(p2.x, p2.y);
+            ctx.stroke();
+            ctx.globalAlpha = 1;
+          }
+        }
+      }
+
+      requestAnimationFrame(animateBg);
+    }
+
+    animateBg();
+  }
+
+  /* ---------- Глобальный параллакс контента ---------- */
+  const parallaxLayers = document.querySelectorAll('[data-parallax]');
+  const parallaxSpeed = -0.04;
+
+  if (parallaxLayers.length && !reduceMotion.matches) {
+    let rafId = null;
+    let lastX = 0;
+    let lastY = 0;
+    let targetX = 0;
+    let targetY = 0;
+
+    const updateParallax = () => {
+      lastX += (targetX - lastX) * 0.1;
+      lastY += (targetY - lastY) * 0.1;
+
+      parallaxLayers.forEach((el) => {
+        const speed = Number(el.dataset.parallax) || 1;
+        const x = lastX * speed * parallaxSpeed;
+        const y = lastY * speed * parallaxSpeed;
+        el.style.transform = `translate3d(${x}px, ${y}px, 0)`;
+      });
+
+      rafId = requestAnimationFrame(updateParallax);
+    };
+
+    window.addEventListener('pointermove', (e) => {
+      const cx = window.innerWidth / 2;
+      const cy = window.innerHeight / 2;
+      targetX = (e.clientX - cx) / cx;
+      targetY = (e.clientY - cy) / cy;
+    });
+
+    updateParallax();
+
+    window.addEventListener('resize', () => {
+      targetX = 0;
+      targetY = 0;
+      lastX = 0;
+      lastY = 0;
+    });
+  }
+
   document.querySelectorAll('.photo-media img, .tile img').forEach((img) => {
     const holder = img.closest('.photo-media, .tile');
     if (!holder) return;
