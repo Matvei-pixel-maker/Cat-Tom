@@ -156,6 +156,29 @@
     });
   }
 
+  /* ---------- Светящийся курсор (Glow Cursor) ---------- */
+  const glowCursor = document.getElementById('glowCursor');
+  if (glowCursor && window.matchMedia('(pointer: fine)').matches && !reduceMotion.matches) {
+    let glowX = 0;
+    let glowY = 0;
+    let targetGlowX = 0;
+    let targetGlowY = 0;
+
+    window.addEventListener('mousemove', (e) => {
+      targetGlowX = e.clientX;
+      targetGlowY = e.clientY;
+    });
+
+    const animateGlow = () => {
+      glowX += (targetGlowX - glowX) * 0.15;
+      glowY += (targetGlowY - glowY) * 0.15;
+      glowCursor.style.transform = `translate(${glowX - 60}px, ${glowY - 60}px)`;
+      requestAnimationFrame(animateGlow);
+    };
+
+    animateGlow();
+  }
+
   document.querySelectorAll('.photo-media img, .tile img').forEach((img) => {
     const holder = img.closest('.photo-media, .tile');
     if (!holder) return;
