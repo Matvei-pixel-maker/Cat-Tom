@@ -981,6 +981,22 @@
        без пересчёта вёрстки, поэтому скролл на телефоне остаётся плавным. */
     .fx-in {
       animation: fade-in-up var(--fx-dur, 0.72s) cubic-bezier(0.22, 0.75, 0.24, 1) var(--fx-delay, 0ms) both;
+      /* Аппаратное ускорение: заранее подсказываем браузеру, что будут меняться только эти свойства */
+      will-change: opacity, transform;
+    }
+
+    /* Мобильные: короче дистанция, быстрее анимация, жесткое ускорение через translateZ(0) */
+    @media (max-width: 760px) {
+      [data-reveal] {
+        /* Меньше подъём — глазу проще, меньше работа композитора */
+        --fx-lift: 15px;
+      }
+      .fx-in {
+        /* 0.4s вместо 0.72s — на узких экранах длинная анимация раздражает */
+        --fx-dur: 0.4s;
+        /* Принудительно поднимаем в свой слой GPU (композитор) */
+        transform: translateZ(0);
+      }
     }
 
     @keyframes fade-in-up {
@@ -2950,6 +2966,14 @@
       const showReveal = (item) => {
         const delay = Number(item.dataset.revealDelay || 0);
         if (delay > 0) item.style.setProperty('--fx-delay', `${delay}ms`);
+
+        /* Аппаратное ускорение: заранее подсказываем, что анимируем opacity/transform.
+           На мобильных translateZ(0) принудительно создаёт GPU-слой до старта анимации. */
+        item.style.willChange = 'opacity, transform';
+        if (window.matchMedia('(max-width: 760px)').matches) {
+          item.style.transform = 'translateZ(0) translate3d(0, var(--fx-lift, 15px), 0)';
+        }
+
         item.classList.add('fx-in');
 
         /* После анимации оставляем элемент видимым: добавляем класс-фиксатор,
@@ -2957,13 +2981,19 @@
         item.addEventListener('animationend', () => {
           item.classList.remove('fx-in');
           item.classList.add('is-revealed');
+          /* Чистим will-change после анимации — не держим GPU-слои зря */
+          item.style.willChange = '';
+          item.style.transform = '';
         }, { once: true });
 
-        /* Страховка на случай прерванной анимации или фоновой вкладки */
+        /* Страховка на случай прерванной анимации или фоновой вкладки.
+           На мобильных анимация короче (0.4s), поэтому таймаут уменьшаем. */
         window.setTimeout(() => {
           item.classList.remove('fx-in');
           item.classList.add('is-revealed');
-        }, delay + 1400);
+          item.style.willChange = '';
+          item.style.transform = '';
+        }, delay + (window.matchMedia('(max-width: 760px)').matches ? 800 : 1400));
       };
 
       if ('IntersectionObserver' in window && !reduceMotion.matches && revealTargets.length) {
