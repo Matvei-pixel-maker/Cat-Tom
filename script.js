@@ -625,7 +625,72 @@
     revealTargets.forEach((item) => {
       /* Блок 3D отсекаем прямо здесь, даже если data-reveal добавят позже */
       if (item.closest('#spinCard')) return;
+      /* Скрытые плитки галереи показываем через кнопку «Ещё», не через скролл */
+      if (item.classList.contains('gallery-hidden')) return;
       revealObserver.observe(item);
+    });
+  }
+
+  /* ---------- Галерея: кнопка «Ещё фотографии / Свернуть» ---------- */
+  const galleryMoreBtn = document.getElementById('galleryMore');
+  const galleryMoreText = galleryMoreBtn?.querySelector('.gallery-more-text');
+  const hiddenTiles = Array.from(document.querySelectorAll('.gallery-grid .gallery-hidden'));
+  const initiallyHiddenTiles = [...hiddenTiles]; // сохраняем исходный список для свертывания
+
+  if (galleryMoreBtn && hiddenTiles.length) {
+    let isExpanded = false;
+
+    galleryMoreBtn.addEventListener('click', () => {
+      if (!isExpanded) {
+        /* --- РАЗВОРАЧИВАЕМ: показываем скрытые плитки --- */
+        hiddenTiles.forEach((tile, index) => {
+          tile.classList.remove('gallery-hidden');
+          tile.style.setProperty('--fx-delay', `${index * 70}ms`);
+          tile.classList.add('gallery-fade-in');
+
+          tile.addEventListener('animationend', () => {
+            tile.classList.remove('gallery-fade-in');
+            tile.classList.add('is-revealed');
+            tile.style.willChange = '';
+            tile.style.removeProperty('--fx-delay');
+          }, { once: true });
+
+          window.setTimeout(() => {
+            if (tile.classList.contains('gallery-fade-in')) {
+              tile.classList.remove('gallery-fade-in');
+              tile.classList.add('is-revealed');
+              tile.style.willChange = '';
+              tile.style.removeProperty('--fx-delay');
+            }
+          }, index * 70 + 800);
+        });
+
+        /* Меняем текст кнопки */
+        if (galleryMoreText) galleryMoreText.textContent = 'Свернуть галерею';
+        isExpanded = true;
+      } else {
+        /* --- СВЁРТЫВАЕМ: скрываем дополнительные плитки обратно --- */
+        initiallyHiddenTiles.forEach((tile) => {
+          /* Убираем классы анимации и состояния */
+          tile.classList.remove('gallery-fade-in', 'is-revealed');
+          tile.style.willChange = '';
+          tile.style.removeProperty('--fx-delay');
+          tile.style.removeProperty('opacity');
+          tile.style.removeProperty('transform');
+          /* Возвращаем класс скрытия */
+          tile.classList.add('gallery-hidden');
+        });
+
+        /* Меняем текст кнопки обратно */
+        if (galleryMoreText) galleryMoreText.textContent = 'Ещё фотографии котика';
+        isExpanded = false;
+
+        /* Прокручиваем к началу галереи для удобства */
+        const gallerySection = document.getElementById('gallery');
+        if (gallerySection) {
+          gallerySection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+      }
     });
   }
 
@@ -634,6 +699,46 @@
   const zoomCta = document.querySelector('.nav-cta');
   const zoomFx = document.getElementById('zoomFx');
   let isZooming = false;
+
+  /* ---------- Галерея: 3D-наклон плиток при наведении ---------- */
+  if (window.matchMedia('(hover: hover) and (pointer: fine)').matches && !reduceMotion.matches) {
+    const grid = document.getElementById('galleryGrid');
+    const TILT_MAX = 6; // градусы
+
+    const handleTilt = (event, tile) => {
+      const rect = tile.getBoundingClientRect();
+      const cx = rect.left + rect.width / 2;
+      const cy = rect.top + rect.height / 2;
+      const dx = ((event.clientX - cx) / (rect.width / 2)) * TILT_MAX;
+      const dy = -((event.clientY - cy) / (rect.height / 2)) * TILT_MAX;
+      tile.style.transform = `perspective(900px) rotateX(${dy}deg) rotateY(${dx}deg) scale(1.02)`;
+      tile.style.transition = 'none';
+    };
+
+    const resetTilt = (tile) => {
+      tile.style.transform = '';
+      tile.style.transition = '';
+    };
+
+    grid.addEventListener('mouseover', (event) => {
+      const tile = event.target.closest('.tile');
+      if (!tile || tile.closest('#spinCard')) return;
+      tile.addEventListener('mousemove', onTileMove);
+      tile.addEventListener('mouseleave', onTileLeave);
+    });
+
+    const onTileMove = (event) => {
+      const tile = event.currentTarget;
+      handleTilt(event, tile);
+    };
+
+    const onTileLeave = (event) => {
+      const tile = event.currentTarget;
+      resetTilt(tile);
+      tile.removeEventListener('mousemove', onTileMove);
+      tile.removeEventListener('mouseleave', onTileLeave);
+    };
+  }
 
   const centerPetButton = (behavior) => {
     const rect = petBtn.getBoundingClientRect();
