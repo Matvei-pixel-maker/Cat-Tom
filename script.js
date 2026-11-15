@@ -851,47 +851,22 @@
     }
   }
 
-  /* ---------- Тянущийся шнурок со скроллом (GSAP + ScrollTrigger) ---------- */
-  const stringPath = document.getElementById('stringPath');
-  const scrollString = document.getElementById('scrollString');
+  /* ---------- Тянущееся созвездие со скроллом (GSAP + ScrollTrigger) ---------- */
+  /* Линия живёт в координатах документа: группа #constellationTrack сдвигается
+     по Y на величину прокрутки, поэтому змейка «прибита» к контенту и огибает
+     блоки, а рисуется она ровно настолько, насколько прокручена страница. */
+  const constellation = document.getElementById('constellation');
+  const constellationTrack = document.getElementById('constellationTrack');
+  const constellationPath = document.getElementById('constellationPath');
+  const constellationGlow = document.getElementById('constellationGlowPath');
+  const constellationStars = document.getElementById('constellationStars');
+  const constellationMedia = window.matchMedia('(min-width: 768px)');
 
-  if (stringPath && scrollString && !reduceMotion.matches) {
-    console.log('Шнурок отрисован');
-    const docHeight = Math.max(
-      document.body.scrollHeight,
-      document.documentElement.scrollHeight,
-      document.body.offsetHeight,
-      document.documentElement.offsetHeight,
-      document.body.clientHeight,
-      document.documentElement.clientHeight
-    );
-    const pathLength = docHeight * 2;
+  if (constellation && constellationPath && constellationTrack && constellationStars) {
+    let drawTween = null;
 
-    /* Путь шнурка: от верхнего края до низа документа */
-    stringPath.setAttribute(
-      'd',
-      `M 40 0 L 40 ${pathLength}`
-    );
-
-    stringPath.style.strokeDasharray = pathLength;
-    stringPath.style.strokeDashoffset = pathLength;
-
-    gsap.to(stringPath, {
-      scrollTrigger: {
-        trigger: 'body',
-        start: 'top top',
-        end: `bottom bottom`,
-        scrub: true,
-        invalidateOnRefresh: true,
-      },
-      strokeDashoffset: 0,
-      duration: 1,
-      ease: 'none',
-    });
-
-    /* Обновляем высоту пути при ресайзе */
-    window.addEventListener('resize', () => {
-      const newHeight = Math.max(
+    const measureDocHeight = () =>
+      Math.max(
         document.body.scrollHeight,
         document.documentElement.scrollHeight,
         document.body.offsetHeight,
@@ -899,10 +874,199 @@
         document.body.clientHeight,
         document.documentElement.clientHeight
       );
-      const newLength = newHeight * 2;
-      stringPath.setAttribute('d', `M 40 0 L 40 ${newLength}`);
-      stringPath.style.strokeDasharray = newLength;
+
+    /* Синусоида-змейка: чередуем «рельсы» у краёв контента, чтобы линия
+       обходила блоки сбоку, а не шла через центр. */
+    const buildSerpentinePath = (width, height) => {
+      const leftRail = width * 0.12;
+      const rightRail = width * 0.88;
+      const innerLeft = width * 0.26;
+      const innerRight = width * 0.74;
+      const rails = [leftRail, rightRail, innerRight, innerLeft, leftRail, innerRight, rightRail, innerLeft];
+
+      const step = Math.max(height * 0.42, 240);
+      const commands = [];
+      let railIndex = 0;
+
+      let x = rails[0];
+      let y = 0;
+      commands.push(`M ${x.toFixed(1)} 0`);
+
+      while (y < height + step) {
+        railIndex += 1;
+        const nextX = rails[railIndex % rails.length];
+        const nextY = y + step;
+        /* Контрольные точки у каждого конца дают плавный S-изгиб */
+        const c1y = y + step * 0.55;
+        const c2y = nextY - step * 0.55;
+        commands.push(
+          `C ${x.toFixed(1)} ${c1y.toFixed(1)}, ${nextX.toFixed(1)} ${c2y.toFixed(1)}, ${nextX.toFixed(1)} ${nextY.toFixed(1)}`
+        );
+        x = nextX;
+        y = nextY;
+      }
+
+      return commands.join(' ');
+    };
+
+    /* Звёзды-точки: каждая — мягкое гало (радиальный градиент) + ядро.
+       Точки ставятся по getPointAtLength(), поэтому всегда лежат на линии. */
+    const buildStars = (pathEl) => {
+      constellationStars.textContent = '';
+      const total = pathEl.getTotalLength();
+      if (!total) return;
+
+      const maxStars = 84;
+      const spacing = Math.max(total / maxStars, 130);
+      const fragment = document.createDocumentFragment();
+      const SVG_NS = 'http://www.w3.org/2000/svg';
+
+      for (let distance = spacing * 0.6; distance < total; distance += spacing) {
+        const point = pathEl.getPointAtLength(distance);
+        const twinkle = 2.4 + Math.random() * 1.8;
+        const delay = (Math.random() * twinkle).toFixed(2);
+
+        const halo = document.createElementNS(SVG_NS, 'circle');
+        halo.setAttribute('cx', point.x.toFixed(1));
+        halo.setAttribute('cy', point.y.toFixed(1));
+        halo.setAttribute('r', '5.2');
+        halo.setAttribute('fill', 'url(#constellationStarGlow)');
+        halo.setAttribute('opacity', '0.6');
+
+        const core = document.createElementNS(SVG_NS, 'circle');
+        core.setAttribute('cx', point.x.toFixed(1));
+        core.setAttribute('cy', point.y.toFixed(1));
+        core.setAttribute('r', (0.75 + Math.random() * 0.6).toFixed(2));
+        core.setAttribute('class', 'star');
+        core.setAttribute('style', `animation-duration:${twinkle.toFixed(2)}s;animation-delay:-${delay}s`);
+
+        fragment.appendChild(halo);
+        fragment.appendChild(core);
+      }
+
+      constellationStars.appendChild(fragment);
+    };
+
+    const syncTrack = (scrollValue) => {
+      constellationTrack.setAttribute('transform', `translate(0 ${-scrollValue})`);
+    };
+
+    const renderConstellation = () => {
+      /* На мобильных созвездие отключено — вообще не считаем геометрию */
+      if (!constellationMedia.matches) {
+        if (drawTween) {
+          drawTween.scrollTrigger?.kill();
+          drawTween.kill();
+          drawTween = null;
+        }
+        constellationStars.textContent = '';
+        constellationPath.setAttribute('d', '');
+        if (constellationGlow) constellationGlow.setAttribute('d', '');
+        return;
+      }
+
+      const width = Math.max(window.innerWidth, 320);
+      const height = Math.max(window.innerHeight, 320);
+      const docHeight = measureDocHeight();
+
+      /* viewBox ровно по размеру экрана — SVG не схлопнется в 0×0,
+         и preserveAspectRatio="none" не сплющит звёзды в эллипсы */
+      constellation.setAttribute('viewBox', `0 0 ${width} ${height}`);
+
+      const d = buildSerpentinePath(width, docHeight);
+      constellationPath.setAttribute('d', d);
+      if (constellationGlow) {
+        constellationGlow.setAttribute('d', d);
+        constellationGlow.style.strokeDasharray = '';
+        constellationGlow.style.strokeDashoffset = '';
+      }
+
+      const totalLength = constellationPath.getTotalLength();
+      buildStars(constellationPath);
+
+      /* Убираем возможные сегменты от прошлой попытки и возвращаем базовые пути */
+      if (drawTween) {
+        if (Array.isArray(drawTween)) {
+          drawTween.forEach((t) => {
+            try { t.scrollTrigger?.kill(); } catch (e) {}
+            try { t.kill(); } catch (e) {}
+          });
+        } else {
+          try { drawTween.scrollTrigger?.kill(); } catch (e) {}
+          try { drawTween.kill(); } catch (e) {}
+        }
+        drawTween = null;
+      }
+      const oldSegs = constellationTrack.querySelectorAll('.constellation-segment');
+      oldSegs.forEach((n) => n.remove());
+      constellationPath.style.stroke = '';
+      if (constellationGlow) constellationGlow.style.stroke = '';
+
+      /* Эффект «рождения» линии: линия рисуется ровно настолько, насколько
+         прокручена страница. В самом верху виден небольшой «росток»
+         (чтобы линия была заметна сразу), внизу — весь путь целиком.
+         scrub: true — линия замирает вместе со скроллом и ускоряется с ним. */
+      const viewportShare = Math.min(height / docHeight, 1);
+      const startOffset = totalLength * (1 - Math.max(viewportShare * 0.15, 0.03));
+
+      const paths = constellationGlow ? [constellationPath, constellationGlow] : [constellationPath];
+
+      paths.forEach((path) => {
+        path.style.strokeDasharray = totalLength;
+        path.style.strokeDashoffset = startOffset;
+      });
+
+      if (reduceMotion.matches || !window.gsap) {
+        /* Без анимации — показываем линию целиком */
+        paths.forEach((path) => {
+          path.style.strokeDashoffset = 0;
+        });
+        syncTrack(window.scrollY || window.pageYOffset || 0);
+        return;
+      }
+
+      drawTween = window.gsap.to(paths, {
+        strokeDashoffset: 0,
+        ease: 'none',
+        scrollTrigger: {
+          trigger: 'body',
+          start: 'top top',
+          end: 'bottom bottom',
+          scrub: true,
+          invalidateOnRefresh: true,
+          onUpdate: (self) => syncTrack(self.scroll()),
+        },
+      });
+
+      /* Стартовое положение — до первого тика скролла */
+      syncTrack(window.scrollY || window.pageYOffset || 0);
+
+      if (window.ScrollTrigger?.refresh) window.ScrollTrigger.refresh();
+    };
+
+    renderConstellation();
+
+    /* Пересобираем геометрию при ресайзе (с дебаунсом) */
+    let resizeTimer = 0;
+    window.addEventListener('resize', () => {
+      window.clearTimeout(resizeTimer);
+      resizeTimer = window.setTimeout(renderConstellation, 180);
     });
+
+    /* Сдвиг группы на величину прокрутки: прибивает змейку к документу.
+       Вызываем напрямую из scroll-события (одно присвоение атрибута — дёшево),
+       чтобы линия не «отклеивалась» при программном скролле и переходах по якорям. */
+    const requestTrackSync = () => {
+      if (!constellationMedia.matches) return;
+      syncTrack(window.scrollY || window.pageYOffset || 0);
+    };
+
+    window.addEventListener('scroll', requestTrackSync, { passive: true });
+    window.addEventListener('resize', requestTrackSync, { passive: true });
+
+    if (window.ScrollTrigger?.addEventListener) {
+      window.ScrollTrigger.addEventListener('refresh', requestTrackSync);
+    }
   }
 
   /* ---------- Печатная машинка для текста «Обо мне» ---------- */

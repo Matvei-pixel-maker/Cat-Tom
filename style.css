@@ -70,22 +70,62 @@ html {
   will-change: transform;
 }
 
-.scroll-string {
+/* ============ Тянущееся созвездие (SVG поверх фона, за контентом) ============ */
+.constellation {
   position: fixed;
   top: 0;
-  left: 40px;
+  left: 0;
   width: 100%;
   height: 100vh;
-  z-index: 100;
+  height: 100dvh;
+  /* Чуть выше спирали (-1), но ниже контента (у .page z-index: 1) */
+  z-index: -1;
   pointer-events: none;
+  overflow: visible;
+  opacity: 0.75;
+  will-change: opacity;
 }
 
-.scroll-string path {
+.constellation path {
   stroke-linecap: round;
+  stroke-linejoin: round;
+  /* Рисование линии идёт через stroke-dashoffset из JS */
 }
 
+/* Звёзды-точки на линии: ядро мягко пульсирует */
+.constellation .star {
+  fill: #eaf4fc;
+  stroke: none;
+  opacity: 0.85;
+  animation-name: constellation-twinkle;
+  animation-timing-function: ease-in-out;
+  animation-iteration-count: infinite;
+  transform-box: fill-box;
+  transform-origin: center;
+}
+
+@keyframes constellation-twinkle {
+  0%,
+  100% {
+    opacity: 0.35;
+    transform: scale(0.82);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.18);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .constellation .star {
+    animation: none;
+    opacity: 0.9;
+  }
+}
+
+/* На узких экранах отключаем полностью — чтобы не лагало */
 @media (max-width: 767px) {
-  .scroll-string {
+  .constellation {
     display: none;
   }
 }
