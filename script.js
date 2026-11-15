@@ -12,7 +12,7 @@
     const particles = [];
     const PARTICLE_COUNT = 90;
     const MOUSE_RADIUS = 260;
-    const PARTICLE_COLOR = '#00e5ff';
+    const PARTICLE_COLOR = 'rgba(110, 172, 214, 0.45)';
     const CONNECT_DIST = 160;
 
     const mouse = { x: -9999, y: -9999 };
@@ -60,11 +60,9 @@
 
       draw() {
         ctx.fillStyle = PARTICLE_COLOR;
-        ctx.globalAlpha = 0.6;
         ctx.beginPath();
         ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
         ctx.fill();
-        ctx.globalAlpha = 1;
       }
     }
 
@@ -802,6 +800,108 @@
       /* Скрытые плитки галереи показываем через кнопку «Ещё», не через скролл */
       if (item.classList.contains('gallery-hidden')) return;
       revealObserver.observe(item);
+    });
+  }
+
+  /* ---------- GSAP анимации заголовков (Awwwards-стиль) ---------- */
+  if (window.gsap && !reduceMotion.matches) {
+    const { gsap } = window;
+
+    /* Регистрируем ScrollTrigger для анимации при скролле */
+    if (typeof gsap.registerPlugin === 'function') {
+      try {
+        gsap.registerPlugin(window.ScrollTrigger || gsap.core.globals().ScrollTrigger);
+      } catch (e) {
+        /* ScrollTrigger не загружен — анимация при скролле не будет */
+      }
+    }
+
+    console.log('GSAP работает');
+    console.log('Анимация Тома запущена');
+
+    /* Главный заголовок "Том": буквы вылетают снизу с блюром при загрузке */
+    const heroLetters = document.querySelectorAll('.hero-name .letter');
+    if (heroLetters.length) {
+      gsap.set(heroLetters, { y: 60, filter: 'blur(12px)', opacity: 0 });
+      gsap.to(heroLetters, {
+        duration: 0.8,
+        y: 0,
+        filter: 'blur(0px)',
+        opacity: 1,
+        stagger: 0.12,
+        ease: 'back.out(1.7)',
+        delay: 0.2,
+      });
+    }
+
+    /* Заголовок 3D-блока: текст выезжает справа при скролле */
+    const spinTitle = document.querySelector('#spin-title');
+    if (spinTitle) {
+      gsap.from(spinTitle, {
+        scrollTrigger: {
+          trigger: '#spin',
+          start: 'top 80%',
+          toggleActions: 'play none none none',
+        },
+        duration: 1.2,
+        x: 120,
+        opacity: 0,
+        ease: 'power3.out',
+      });
+    }
+  }
+
+  /* ---------- Тянущийся шнурок со скроллом (GSAP + ScrollTrigger) ---------- */
+  const stringPath = document.getElementById('stringPath');
+  const scrollString = document.getElementById('scrollString');
+
+  if (stringPath && scrollString && !reduceMotion.matches) {
+    console.log('Шнурок отрисован');
+    const docHeight = Math.max(
+      document.body.scrollHeight,
+      document.documentElement.scrollHeight,
+      document.body.offsetHeight,
+      document.documentElement.offsetHeight,
+      document.body.clientHeight,
+      document.documentElement.clientHeight
+    );
+    const pathLength = docHeight * 2;
+
+    /* Путь шнурка: от верхнего края до низа документа */
+    stringPath.setAttribute(
+      'd',
+      `M 40 0 L 40 ${pathLength}`
+    );
+
+    stringPath.style.strokeDasharray = pathLength;
+    stringPath.style.strokeDashoffset = pathLength;
+
+    gsap.to(stringPath, {
+      scrollTrigger: {
+        trigger: 'body',
+        start: 'top top',
+        end: `bottom bottom`,
+        scrub: true,
+        invalidateOnRefresh: true,
+      },
+      strokeDashoffset: 0,
+      duration: 1,
+      ease: 'none',
+    });
+
+    /* Обновляем высоту пути при ресайзе */
+    window.addEventListener('resize', () => {
+      const newHeight = Math.max(
+        document.body.scrollHeight,
+        document.documentElement.scrollHeight,
+        document.body.offsetHeight,
+        document.documentElement.offsetHeight,
+        document.body.clientHeight,
+        document.documentElement.clientHeight
+      );
+      const newLength = newHeight * 2;
+      stringPath.setAttribute('d', `M 40 0 L 40 ${newLength}`);
+      stringPath.style.strokeDasharray = newLength;
     });
   }
 
